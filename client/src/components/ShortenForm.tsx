@@ -1,0 +1,90 @@
+import { useState, FormEvent } from 'react';
+import { createLink, Link } from '../api';
+
+interface Props {
+  creatorUuid: string;
+  onSuccess: (link: Link) => void;
+}
+
+export default function ShortenForm({ creatorUuid, onSuccess }: Props) {
+  const [url, setUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<Link | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const link = await createLink(url, creatorUuid);
+      setResult(link);
+      setUrl('');
+      onSuccess(link);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!result) return;
+    await navigator.clipboard.writeText(result.short_url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <h2 className="text-base font-semibold text-slate-700 mb-4">Shorten a URL</h2>
+
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://example.com/very/long/url"
+          required
+          className="flex-1 px-4 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 placeholder:text-slate-400"
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          className="px-5 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {loading ? 'Shortening...' : 'Shorten'}
+        </button>
+      </form>
+
+      {error && (
+        <p className="mt-3 text-sm text-red-500">{error}</p>
+      )}
+
+      {result && (
+        <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-2">
+            Your short link
+          </p>
+          <div className="flex items-center gap-3">
+            <a
+              href={result.short_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 font-mono text-slate-900 font-semibold hover:underline truncate"
+            >
+              {result.short_url}
+            </a>
+            <button
+              onClick={handleCopy}
+              className="shrink-0 px-3 py-1.5 text-xs font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-700 transition-colors"
+            >
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
