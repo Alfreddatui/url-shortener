@@ -5,8 +5,10 @@ export interface Link {
   created_at: string;
 }
 
+const BASE = import.meta.env.VITE_API_URL ?? '';
+
 export async function createLink(url: string, creatorUuid: string): Promise<Link> {
-  const res = await fetch('/api/links', {
+  const res = await fetch(`${BASE}/api/links`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url, creator_uuid: creatorUuid }),
@@ -19,7 +21,7 @@ export async function createLink(url: string, creatorUuid: string): Promise<Link
 }
 
 export async function getMyLinks(creatorUuid: string): Promise<Link[]> {
-  const res = await fetch(`/api/links?creator_uuid=${encodeURIComponent(creatorUuid)}`);
+  const res = await fetch(`${BASE}/api/links?creator_uuid=${encodeURIComponent(creatorUuid)}`);
   if (!res.ok) throw new Error('Failed to fetch links');
   return res.json();
 }
