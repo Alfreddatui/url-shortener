@@ -4,7 +4,7 @@ A production-ready URL shortening service. Paste a long URL, get a short one. Cl
 
 **Stack:** TypeScript · Node.js · Express · PostgreSQL · React · Vite · Tailwind CSS
 
-**Live demo:** *(deploying — link will be added shortly)*
+**Live demo:** https://url-shortener-gilt-nu-33.vercel.app
 
 ---
 
