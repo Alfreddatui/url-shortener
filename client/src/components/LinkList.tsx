@@ -4,11 +4,17 @@ import { getMyLinks, Link } from '../api';
 interface Props {
   creatorUuid: string;
   newLink: Link | null;
+  onCopied: () => void;
 }
 
-export default function LinkList({ creatorUuid, newLink }: Props) {
+export default function LinkList({ creatorUuid, newLink, onCopied }: Props) {
   const [links, setLinks] = useState<Link[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleCopy = async (link: Link) => {
+    await navigator.clipboard.writeText(link.short_url);
+    onCopied();
+  };
 
   const fetchLinks = useCallback(async () => {
     try {
@@ -34,15 +40,13 @@ export default function LinkList({ creatorUuid, newLink }: Props) {
         {links.map((link) => (
           <li key={link.short_code} className="py-3 flex flex-col sm:flex-row sm:items-start sm:gap-4">
             <div className="flex-1 min-w-0">
-              <a
-                href={link.short_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`${link.short_url}, redirects to ${link.original_url}, opens in a new tab`}
-                className="font-mono text-sm font-semibold text-slate-900 hover:underline"
+              <button
+                onClick={() => handleCopy(link)}
+                aria-label={`Copy ${link.short_url} to clipboard`}
+                className="font-mono text-sm font-semibold text-slate-900 hover:underline text-left"
               >
                 {link.short_url}
-              </a>
+              </button>
               <p className="text-xs text-slate-400 truncate mt-0.5" aria-hidden="true">
                 {link.original_url}
               </p>
