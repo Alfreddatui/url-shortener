@@ -44,19 +44,32 @@ ogp/
 ├── docker-compose.yml     # PostgreSQL container
 ├── server/                # Express API
 │   ├── migrations/        # SQL migration files (run on startup)
+│   ├── vitest.config.ts   # Test config — redirects DATABASE_URL to test DB
 │   └── src/
+│       ├── app.ts         # Express app (exported for testing)
+│       ├── index.ts       # Entry point — runs migrations, starts server
 │       ├── kgs.ts         # Key Generation Service
 │       ├── db.ts          # pg pool + migration runner
-│       ├── index.ts       # Express app
-│       └── routes/
-│           ├── links.ts   # POST /api/links, GET /api/links
-│           └── redirect.ts # GET /:shortCode
+│       ├── routes/
+│       │   ├── links.ts   # POST /api/links, GET /api/links
+│       │   └── redirect.ts # GET /:shortCode
+│       └── __tests__/
+│           ├── globalSetup.ts   # Creates test DB, runs migrations
+│           ├── setup.ts         # Truncates links table before each test
+│           ├── kgs.test.ts
+│           ├── links.test.ts
+│           └── redirect.test.ts
 └── client/                # React frontend (Vite)
+    ├── vitest.config.ts   # Test config — jsdom environment
     └── src/
         ├── App.tsx
-        └── components/
-            ├── ShortenForm.tsx
-            └── LinkList.tsx
+        ├── setupTests.ts  # jest-dom matchers + afterEach cleanup
+        ├── components/
+        │   ├── ShortenForm.tsx
+        │   └── LinkList.tsx
+        └── __tests__/
+            ├── ShortenForm.test.tsx
+            └── LinkList.test.tsx
 ```
 
 ---
@@ -169,6 +182,31 @@ The project was built in deliberate layers: schema first, then business logic (K
 
 ---
 
+## Testing
+
+```bash
+# Server — unit + integration tests (requires Docker postgres running)
+npm test --prefix server
+
+# Client — component tests (no server needed)
+npm test --prefix client
+```
+
+**Server tests** (`server/src/__tests__/`):
+- `kgs.test.ts` — unit tests for the Key Generation Service: encode, decode, roundtrip, edge cases
+- `links.test.ts` — integration: POST validation, GET by UUID, rate-limit headers, ordering
+- `redirect.test.ts` — integration: 302 redirect, 404 for unknown codes
+
+Integration tests run against a dedicated `urlshortener_test` database. `vitest.config.ts` derives the credentials from `server/.env` and overrides the database name — no separate test credentials needed. Migrations are applied automatically by `globalSetup.ts` before the first test, and the `links` table is truncated before each test for isolation.
+
+**Client tests** (`client/src/__tests__/`):
+- `ShortenForm.test.tsx` — renders, submits, shows result, shows error, aria-invalid, Copy button
+- `LinkList.test.tsx` — renders links, handles empty state, refetches on new link
+
+API calls are mocked with `vi.spyOn` — client tests run entirely in jsdom with no server required.
+
+---
+
 ## Future Work
 
 - **Link expiry** — add `expires_at TIMESTAMPTZ DEFAULT NULL` column, check on redirect, cleanup worker
@@ -176,5 +214,4 @@ The project was built in deliberate layers: schema first, then business logic (K
 - **Redis rate limiting** — share rate limit state across instances using `rate-limit-redis`
 - **Sliding window rate limiter** — replace fixed window to eliminate the boundary burst vulnerability
 - **Optional authentication** — let users optionally sign in (email OTP or OAuth) to persist their links across devices. The UUID flow stays for anonymous, frictionless use — auth would be an opt-in addition, not a replacement
-- **Tests** — unit tests for KGS, integration tests for API routes against a test database
 - **Deployment** — containerise the server, deploy behind a CDN for redirect caching at the edge
