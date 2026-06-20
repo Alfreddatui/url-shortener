@@ -13,27 +13,32 @@ A production-ready URL shortening service. Paste a long URL, get a short one. Cl
 **Prerequisites:** Node.js 20+, Docker Desktop
 
 ```bash
-# 1. Clone and install dependencies
 git clone https://github.com/Alfreddatui/url-shortener.git
 cd url-shortener
 npm install && npm run install:all
+```
 
-# 2. Configure environment
+**Configure your database credentials** — edit both files before starting:
+
+```bash
 cp .env.example .env
 cp server/.env.example server/.env
+```
 
-# Edit root .env — set your database credentials:
-#   DB_NAME=urlshortener
-#   DB_USER=postgres
-#   DB_PASSWORD=yourpassword
+Open `.env` and set:
+```
+DB_NAME=urlshortener
+DB_USER=postgres
+DB_PASSWORD=yourpassword
+```
 
-# Edit server/.env — use the same credentials:
-#   DATABASE_URL=postgres://postgres:yourpassword@localhost:5432/urlshortener
+Open `server/.env` and set (same credentials):
+```
+DATABASE_URL=postgres://postgres:yourpassword@localhost:5432/urlshortener
+```
 
-# 3. Start the database
+```bash
 docker compose up -d
-
-# 4. Start server + client
 npm run dev
 ```
 
@@ -192,11 +197,15 @@ The project was built in deliberate layers: schema first, then business logic (K
 
 ## Testing
 
-```bash
-# Server — unit + integration tests (requires Docker postgres running)
-npm test --prefix server
+Server tests (requires Docker postgres running):
 
-# Client — component tests (no server needed)
+```bash
+npm test --prefix server
+```
+
+Client tests (no server needed):
+
+```bash
 npm test --prefix client
 ```
 
