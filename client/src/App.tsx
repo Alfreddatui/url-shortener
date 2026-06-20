@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import ShortenForm from './components/ShortenForm';
 import LinkList from './components/LinkList';
 import { Link } from './api';
@@ -16,6 +16,12 @@ function getOrCreateUuid(): string {
 export default function App() {
   const [creatorUuid] = useState<string>(getOrCreateUuid);
   const [newLink, setNewLink] = useState<Link | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
+
+  const showCopied = useCallback(() => {
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 2000);
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -34,13 +40,23 @@ export default function App() {
       </header>
 
       <main id="main-content" className="flex-1 max-w-2xl w-full mx-auto px-4 py-6 sm:py-10 space-y-4">
-        <ShortenForm creatorUuid={creatorUuid} onSuccess={setNewLink} />
-        <LinkList creatorUuid={creatorUuid} newLink={newLink} />
+        <ShortenForm creatorUuid={creatorUuid} onSuccess={setNewLink} onCopied={showCopied} />
+        <LinkList creatorUuid={creatorUuid} newLink={newLink} onCopied={showCopied} />
       </main>
 
       <footer className="text-center text-slate-400 text-xs py-6">
         Links are public and permanent · built for OGP
       </footer>
+
+      {toastVisible && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm px-4 py-2 rounded-full shadow-lg pointer-events-none"
+        >
+          Copied to clipboard
+        </div>
+      )}
     </div>
   );
 }

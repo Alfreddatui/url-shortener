@@ -4,18 +4,17 @@ import { createLink, Link } from '../api';
 interface Props {
   creatorUuid: string;
   onSuccess: (link: Link) => void;
+  onCopied: () => void;
 }
 
-export default function ShortenForm({ creatorUuid, onSuccess }: Props) {
+export default function ShortenForm({ creatorUuid, onSuccess, onCopied }: Props) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Link | null>(null);
   const [copied, setCopied] = useState(false);
-
   const inputId = useId();
   const statusId = useId();
-  const canShare = 'share' in navigator;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -33,19 +32,11 @@ export default function ShortenForm({ creatorUuid, onSuccess }: Props) {
     }
   };
 
-  const handleShare = async () => {
-    if (!result) return;
-    if (canShare) {
-      try {
-        await navigator.share({ title: 'Short link', url: result.short_url });
-        return;
-      } catch {
-        // user cancelled share — fall through to clipboard
-      }
-    }
-    await navigator.clipboard.writeText(result.short_url);
+  const handleCopy = async (url: string) => {
+    await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    onCopied();
   };
 
   return (
@@ -90,23 +81,24 @@ export default function ShortenForm({ creatorUuid, onSuccess }: Props) {
               Your short link
             </p>
             <div className="flex items-center gap-3">
-              <a
-                href={result.short_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Short link ${result.short_url}, opens in a new tab`}
-                className="flex-1 font-mono text-slate-900 font-semibold hover:underline truncate"
+              <button
+                onClick={() => handleCopy(result.short_url)}
+                aria-label={`Copy ${result.short_url} to clipboard`}
+                className="flex-1 font-mono text-slate-900 font-semibold hover:underline truncate text-left"
               >
                 {result.short_url}
-              </a>
+              </button>
               <button
-                onClick={handleShare}
-                aria-label={copied ? 'Copied to clipboard' : canShare ? `Share ${result.short_url}` : `Copy ${result.short_url} to clipboard`}
+                onClick={() => handleCopy(result.short_url)}
+                aria-label={`Copy ${result.short_url} to clipboard`}
                 className="shrink-0 px-3 py-1.5 text-xs font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-700 transition-colors"
               >
-                {copied ? 'Copied!' : canShare ? 'Share' : 'Copy'}
+                {copied ? 'Copied!' : 'Copy'}
               </button>
             </div>
+            <p className="text-xs text-slate-400 truncate mt-1" aria-label={`Original URL: ${result.original_url}`}>
+              {result.original_url}
+            </p>
           </div>
         )}
       </div>
