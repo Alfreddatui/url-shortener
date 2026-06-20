@@ -17,4 +17,4 @@ COPY --from=builder /app/dist ./dist
 # Migrations are read at runtime from process.cwd()/migrations
 COPY migrations ./migrations
 EXPOSE 3000
-CMD ["node", "dist/src/index.js"]
+CMD ["node", "dist/index.js"]
