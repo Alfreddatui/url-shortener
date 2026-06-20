@@ -1,8 +1,10 @@
 # OGP URL Shortener
 
-A URL shortening service built as a take-home assignment for Open Government Products (OGP). Paste a long URL, get a short one. Click the short one, get redirected.
+A production-ready URL shortening service. Paste a long URL, get a short one. Click the short one, get redirected.
 
 **Stack:** TypeScript · Node.js · Express · PostgreSQL · React · Vite · Tailwind CSS
+
+**Live demo:** *(deploying — link will be added shortly)*
 
 ---
 
@@ -40,8 +42,8 @@ See [API.md](./API.md) for full endpoint documentation and curl examples.
 ## Project Structure
 
 ```
-ogp/
-├── docker-compose.yml     # PostgreSQL container
+url-shortener/
+├── docker-compose.yml     # PostgreSQL container (dev)
 ├── server/                # Express API
 │   ├── migrations/        # SQL migration files (run on startup)
 │   ├── vitest.config.ts   # Test config — redirects DATABASE_URL to test DB
@@ -227,8 +229,8 @@ Short codes are distinguished from React routes by a regex (`^/[0-9A-Za-z]{6,12}
 ### Prerequisites
 
 - [Terraform](https://developer.hashicorp.com/terraform/install) installed
-- AWS credentials configured (`aws configure` or environment variables)
-- An EC2 key pair created in your AWS account (for SSH access)
+- AWS credentials configured (`aws configure`)
+- An EC2 key pair created in your AWS account (EC2 → Key Pairs → Create, `.pem` format)
 
 ### Deploy
 
@@ -254,9 +256,11 @@ terraform apply
 The EC2 instance bootstraps itself on first boot: installs Docker, clones the repo, writes the `.env`, and runs `docker compose -f docker-compose.prod.yml up --build`. Allow ~3 minutes after `apply` for the app to be reachable.
 
 ```bash
-# Verify
+# Verify (allow ~3 min after apply for Docker build to complete)
 curl http://<elastic-ip>/health   # → {"status":"ok"}
 ```
+
+> **Note:** Once deployed, update `BASE_URL` and `CLIENT_URL` in `/app/.env` on the EC2 instance to use your domain or IP, then restart with `docker compose -f docker-compose.prod.yml up -d --build`.
 
 ### Updating the deployment
 
