@@ -207,6 +207,75 @@ API calls are mocked with `vi.spyOn` — client tests run entirely in jsdom with
 
 ---
 
+## Deployment (EC2)
+
+The production stack runs three Docker containers behind Nginx: **postgres** (database), **server** (Express API), **nginx** (React static files + reverse proxy). Everything is wired together with `docker-compose.prod.yml`.
+
+### Architecture
+
+```
+Internet → EC2 port 80
+  └── nginx container
+        ├── /api/*              → proxy → server:3000 (Express)
+        ├── /health             → proxy → server:3000
+        ├── /:shortCode (6-12 base62 chars) → proxy → server:3000
+        └── everything else     → React static files (SPA fallback)
+```
+
+Short codes are distinguished from React routes by a regex (`^/[0-9A-Za-z]{6,12}$`) in `client/nginx.conf`. All redirect logic stays server-side, so analytics can be added later without touching the frontend.
+
+### Setup on a fresh EC2 instance
+
+```bash
+# 1. Launch EC2 (Ubuntu 22.04, t3.micro), open ports 22, 80, 443
+
+# 2. Install Docker
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker ubuntu   # log out and back in
+
+# 3. Clone the repo
+git clone https://github.com/Alfreddatui/url-shortener.git
+cd url-shortener
+
+# 4. Create the environment file
+cp .env.example .env
+# Edit .env — set DB_NAME, DB_USER, DB_PASSWORD, BASE_URL, CLIENT_URL
+# BASE_URL = http://<your-ec2-ip>   (or https://yourdomain.com with SSL)
+# CLIENT_URL = same as BASE_URL
+
+# 5. Build and start all containers
+docker compose -f docker-compose.prod.yml up -d --build
+
+# 6. Verify
+curl http://localhost/health   # → {"status":"ok"}
+```
+
+### SSL (HTTPS) with Let's Encrypt
+
+Point a domain at your EC2's Elastic IP, then:
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d yourdomain.com
+```
+
+Certbot patches the Nginx config and sets up auto-renewal. Update `BASE_URL` and `CLIENT_URL` in `.env` to `https://yourdomain.com`, then restart:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+### Updating the deployment
+
+```bash
+git pull
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+The server runs migrations on startup, so schema changes apply automatically on redeploy.
+
+---
+
 ## Future Work
 
 - **Link expiry** — add `expires_at TIMESTAMPTZ DEFAULT NULL` column, check on redirect, cleanup worker
@@ -214,4 +283,4 @@ API calls are mocked with `vi.spyOn` — client tests run entirely in jsdom with
 - **Redis rate limiting** — share rate limit state across instances using `rate-limit-redis`
 - **Sliding window rate limiter** — replace fixed window to eliminate the boundary burst vulnerability
 - **Optional authentication** — let users optionally sign in (email OTP or OAuth) to persist their links across devices. The UUID flow stays for anonymous, frictionless use — auth would be an opt-in addition, not a replacement
-- **Deployment** — containerise the server, deploy behind a CDN for redirect caching at the edge
+- **CDN for redirects** — put a CDN in front of the redirect endpoint to cache 302s at the edge, reducing latency for popular short links without hitting the server
