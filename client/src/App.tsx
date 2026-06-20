@@ -26,14 +26,14 @@ export default function App() {
         Skip to main content
       </a>
 
-      <header className="bg-slate-900 text-white py-6 shadow-md">
+      <header className="bg-slate-900 text-white py-5 sm:py-6 shadow-md">
         <div className="max-w-2xl mx-auto px-4">
-          <h1 className="text-2xl font-bold tracking-tight">OGP URL Shortener</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">OGP URL Shortener</h1>
           <p className="text-slate-400 text-sm mt-1">Simple, fast URL shortening</p>
         </div>
       </header>
 
-      <main id="main-content" className="flex-1 max-w-2xl w-full mx-auto px-4 py-10 space-y-4">
+      <main id="main-content" className="flex-1 max-w-2xl w-full mx-auto px-4 py-6 sm:py-10 space-y-4">
         <ShortenForm creatorUuid={creatorUuid} onSuccess={setNewLink} />
         <LinkList creatorUuid={creatorUuid} newLink={newLink} />
       </main>

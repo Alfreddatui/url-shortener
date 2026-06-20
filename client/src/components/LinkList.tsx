@@ -27,12 +27,12 @@ export default function LinkList({ creatorUuid, newLink }: Props) {
   if (loading || links.length === 0) return null;
 
   return (
-    <section aria-labelledby="my-links-heading" className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+    <section aria-labelledby="my-links-heading" className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
       <h2 id="my-links-heading" className="text-base font-semibold text-slate-700 mb-4">My Links</h2>
 
       <ul className="divide-y divide-slate-100" aria-label="Your shortened links">
         {links.map((link) => (
-          <li key={link.short_code} className="py-3 flex items-start gap-4">
+          <li key={link.short_code} className="py-3 flex flex-col sm:flex-row sm:items-start sm:gap-4">
             <div className="flex-1 min-w-0">
               <a
                 href={link.short_url}
@@ -49,7 +49,7 @@ export default function LinkList({ creatorUuid, newLink }: Props) {
             </div>
             <time
               dateTime={link.created_at}
-              className="shrink-0 text-xs text-slate-400 pt-0.5"
+              className="text-xs text-slate-400 mt-1 sm:mt-0 sm:shrink-0 sm:pt-0.5"
             >
               {new Date(link.created_at).toLocaleDateString()}
             </time>

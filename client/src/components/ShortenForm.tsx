@@ -15,6 +15,7 @@ export default function ShortenForm({ creatorUuid, onSuccess }: Props) {
 
   const inputId = useId();
   const statusId = useId();
+  const canShare = 'share' in navigator;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -32,18 +33,26 @@ export default function ShortenForm({ creatorUuid, onSuccess }: Props) {
     }
   };
 
-  const handleCopy = async () => {
+  const handleShare = async () => {
     if (!result) return;
+    if (canShare) {
+      try {
+        await navigator.share({ title: 'Short link', url: result.short_url });
+        return;
+      } catch {
+        // user cancelled share — fall through to clipboard
+      }
+    }
     await navigator.clipboard.writeText(result.short_url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
       <h2 className="text-base font-semibold text-slate-700 mb-4">Shorten a URL</h2>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
         {/* sr-only keeps the label invisible but available to screen readers */}
         <label htmlFor={inputId} className="sr-only">
           Enter a URL to shorten
@@ -57,13 +66,13 @@ export default function ShortenForm({ creatorUuid, onSuccess }: Props) {
           required
           aria-describedby={statusId}
           aria-invalid={error ? 'true' : undefined}
-          className="flex-1 px-4 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 placeholder:text-slate-400"
+          className="flex-1 px-4 py-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 placeholder:text-slate-400"
         />
         <button
           type="submit"
           disabled={loading}
           aria-busy={loading}
-          className="px-5 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full sm:w-auto px-5 py-3 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? 'Shortening...' : 'Shorten'}
         </button>
@@ -91,11 +100,11 @@ export default function ShortenForm({ creatorUuid, onSuccess }: Props) {
                 {result.short_url}
               </a>
               <button
-                onClick={handleCopy}
-                aria-label={copied ? 'Copied to clipboard' : `Copy ${result.short_url} to clipboard`}
+                onClick={handleShare}
+                aria-label={copied ? 'Copied to clipboard' : canShare ? `Share ${result.short_url}` : `Copy ${result.short_url} to clipboard`}
                 className="shrink-0 px-3 py-1.5 text-xs font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-700 transition-colors"
               >
-                {copied ? 'Copied!' : 'Copy'}
+                {copied ? 'Copied!' : canShare ? 'Share' : 'Copy'}
               </button>
             </div>
           </div>
