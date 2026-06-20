@@ -16,13 +16,13 @@ A production-ready URL shortening service. Paste a long URL, get a short one. Cl
 # 1. Clone and install dependencies
 git clone https://github.com/Alfreddatui/url-shortener.git
 cd url-shortener
-npm install           # installs root (concurrently)
-npm install --prefix server
-npm install --prefix client
+npm install && npm run install:all
 
 # 2. Configure environment
 cp .env.example .env                      # docker-compose credentials
 cp server/.env.example server/.env        # server config
+# Edit both .env files — set DB_NAME, DB_USER, DB_PASSWORD to matching values
+# server/.env DATABASE_URL must use the same credentials as root .env
 
 # 3. Start the database
 docker compose up -d
