@@ -7,7 +7,11 @@ import redirectRouter from './routes/redirect';
 const app = express();
 
 app.set('trust proxy', 1);
-app.use(cors({ origin: process.env.CLIENT_URL ?? 'http://localhost:5173' }));
+const allowedOrigins = [
+  process.env.CLIENT_URL ?? 'http://localhost:5173',
+  /^https:\/\/[\w-]+\.vercel\.app$/,
+];
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 app.get('/health', async (_req, res) => {
