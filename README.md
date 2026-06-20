@@ -19,10 +19,16 @@ cd url-shortener
 npm install && npm run install:all
 
 # 2. Configure environment
-cp .env.example .env                      # docker-compose credentials
-cp server/.env.example server/.env        # server config
-# Edit both .env files — set DB_NAME, DB_USER, DB_PASSWORD to matching values
-# server/.env DATABASE_URL must use the same credentials as root .env
+cp .env.example .env
+cp server/.env.example server/.env
+
+# Edit root .env — set your database credentials:
+#   DB_NAME=urlshortener
+#   DB_USER=postgres
+#   DB_PASSWORD=yourpassword
+
+# Edit server/.env — use the same credentials:
+#   DATABASE_URL=postgres://postgres:yourpassword@localhost:5432/urlshortener
 
 # 3. Start the database
 docker compose up -d
