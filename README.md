@@ -175,6 +175,6 @@ The project was built in deliberate layers: schema first, then business logic (K
 - **Click analytics** — record each redirect hit in a `link_clicks` table for time-series reporting
 - **Redis rate limiting** — share rate limit state across instances using `rate-limit-redis`
 - **Sliding window rate limiter** — replace fixed window to eliminate the boundary burst vulnerability
-- **Authentication** — replace `creator_uuid` with email OTP or OAuth for a real security boundary
+- **Optional authentication** — let users optionally sign in (email OTP or OAuth) to persist their links across devices. The UUID flow stays for anonymous, frictionless use — auth would be an opt-in addition, not a replacement
 - **Tests** — unit tests for KGS, integration tests for API routes against a test database
 - **Deployment** — containerise the server, deploy behind a CDN for redirect caching at the edge
