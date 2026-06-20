@@ -207,72 +207,87 @@ API calls are mocked with `vi.spyOn` — client tests run entirely in jsdom with
 
 ---
 
-## Deployment (EC2)
+## Deployment (EC2 + Terraform)
 
-The production stack runs three Docker containers behind Nginx: **postgres** (database), **server** (Express API), **nginx** (React static files + reverse proxy). Everything is wired together with `docker-compose.prod.yml`.
+The production stack runs three Docker containers behind Nginx: **postgres** (database), **server** (Express API), **nginx** (React static files + reverse proxy). Infrastructure is provisioned with Terraform.
 
 ### Architecture
 
 ```
 Internet → EC2 port 80
   └── nginx container
-        ├── /api/*              → proxy → server:3000 (Express)
-        ├── /health             → proxy → server:3000
-        ├── /:shortCode (6-12 base62 chars) → proxy → server:3000
-        └── everything else     → React static files (SPA fallback)
+        ├── /api/*                       → proxy → server:3000 (Express)
+        ├── /health                      → proxy → server:3000
+        ├── /:shortCode (6–12 base62)    → proxy → server:3000
+        └── everything else              → React static files
 ```
 
-Short codes are distinguished from React routes by a regex (`^/[0-9A-Za-z]{6,12}$`) in `client/nginx.conf`. All redirect logic stays server-side, so analytics can be added later without touching the frontend.
+Short codes are distinguished from React routes by a regex (`^/[0-9A-Za-z]{6,12}$`) in `client/nginx.conf`. All redirect logic stays server-side.
 
-### Setup on a fresh EC2 instance
+### Prerequisites
+
+- [Terraform](https://developer.hashicorp.com/terraform/install) installed
+- AWS credentials configured (`aws configure` or environment variables)
+- An EC2 key pair created in your AWS account (for SSH access)
+
+### Deploy
 
 ```bash
-# 1. Launch EC2 (Ubuntu 22.04, t3.micro), open ports 22, 80, 443
+cd terraform
 
-# 2. Install Docker
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker ubuntu   # log out and back in
+# 1. Copy and fill in your values
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars — set key_pair_name and db_password at minimum
 
-# 3. Clone the repo
-git clone https://github.com/Alfreddatui/url-shortener.git
-cd url-shortener
+# 2. Initialise Terraform and preview changes
+terraform init
+terraform plan
 
-# 4. Create the environment file
-cp .env.example .env
-# Edit .env — set DB_NAME, DB_USER, DB_PASSWORD, BASE_URL, CLIENT_URL
-# BASE_URL = http://<your-ec2-ip>   (or https://yourdomain.com with SSL)
-# CLIENT_URL = same as BASE_URL
+# 3. Provision infrastructure (~2 min)
+terraform apply
 
-# 5. Build and start all containers
-docker compose -f docker-compose.prod.yml up -d --build
-
-# 6. Verify
-curl http://localhost/health   # → {"status":"ok"}
+# Terraform prints the outputs:
+#   app_url     = "http://<elastic-ip>"
+#   ssh_command = "ssh ubuntu@<elastic-ip>"
 ```
+
+The EC2 instance bootstraps itself on first boot: installs Docker, clones the repo, writes the `.env`, and runs `docker compose -f docker-compose.prod.yml up --build`. Allow ~3 minutes after `apply` for the app to be reachable.
+
+```bash
+# Verify
+curl http://<elastic-ip>/health   # → {"status":"ok"}
+```
+
+### Updating the deployment
+
+```bash
+ssh ubuntu@<elastic-ip>
+cd /app && git pull
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+The server runs migrations on startup, so schema changes apply automatically.
 
 ### SSL (HTTPS) with Let's Encrypt
 
-Point a domain at your EC2's Elastic IP, then:
+Point a domain at the Elastic IP, then SSH in and run:
 
 ```bash
 sudo apt install certbot python3-certbot-nginx
 sudo certbot --nginx -d yourdomain.com
 ```
 
-Certbot patches the Nginx config and sets up auto-renewal. Update `BASE_URL` and `CLIENT_URL` in `.env` to `https://yourdomain.com`, then restart:
+Update `BASE_URL` and `CLIENT_URL` in `/app/.env` to `https://yourdomain.com`, then restart:
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-### Updating the deployment
+### Tear down
 
 ```bash
-git pull
-docker compose -f docker-compose.prod.yml up -d --build
+terraform destroy
 ```
-
-The server runs migrations on startup, so schema changes apply automatically on redeploy.
 
 ---
 

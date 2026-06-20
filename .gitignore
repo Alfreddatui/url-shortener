@@ -4,3 +4,10 @@ dist/
 *.log
 .DS_Store
 memory/
+
+# Terraform — state files contain secrets, tfvars has credentials
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/terraform.tfvars
+terraform/AWSCLIV2.pkg
